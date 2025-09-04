@@ -84,7 +84,8 @@ private:
     }
 
     void preSpecialize(const string &packageName, const string &process) {
-        vector<string> processList = requestRemoteConfig(packageName);
+        bool skipBuild = false;
+        vector<string> processList = requestRemoteConfig(packageName, skipBuild);
         if (!processList.empty()) {
             bool shouldHook = false;
             for (const auto &item: processList) {
@@ -95,8 +96,8 @@ private:
             }
 
             if (shouldHook) {
-                LOGI("hook package = [%s], process = [%s]\n", packageName.c_str(), process.c_str());
-                Hook(api, env).hook();
+                LOGI("hook package = [%s], process = [%s], skipBuild = %d\n", packageName.c_str(), process.c_str(), skipBuild);
+                Hook(api, env, skipBuild).hook();
                 return;
             }
         }
@@ -110,15 +111,15 @@ private:
      * @param packageName
      * @return list of processes to hook
      */
-    vector<string> requestRemoteConfig(const string &packageName) {
+    vector<string> requestRemoteConfig(const string &packageName, bool &skipBuild) {
         LOGD("requestRemoteConfig for %s", packageName.c_str());
         auto fd = api->connectCompanion();
         LOGD("connect to companion fd = %d", fd);
         vector<char> content;
 
         auto size = receiveConfig(fd, content);
-        auto configs = parseConfig(content, packageName);
-        LOGD("Loaded module payload: %d bytes, config size:%lu ", size, configs.size());
+        auto configs = parseConfig(content, packageName, skipBuild);
+        LOGD("Loaded module payload: %d bytes, config size:%lu, skipBuild:%d ", size, configs.size(), skipBuild);
 
         close(fd);
 
@@ -158,19 +159,29 @@ private:
         return bytesReceived;
     }
 
-    static vector<string> parseConfig(const vector<char> &content, const string &packageName) {
+    static vector<string> parseConfig(const vector<char> &content, const string &packageName, bool &skipBuild) {
         vector<string> result;
+        skipBuild = false;
 
         if (content.empty()) return result;
 
         string line;
         for (char c: content) {
             if (c == '\n') {
-                if (!line.empty() || line[0] != '#') {
+                if (!line.empty() && line[0] != '#') {
                     size_t delimiterPos = line.find('|');
                     bool found = delimiterPos != string::npos;
                     auto pkg = line.substr(0, found ? delimiterPos : line.size());
+
+                    bool localSkipBuild = false;
+                    if (!pkg.empty() && pkg[0] == '!') {
+                        localSkipBuild = true;
+                        pkg = pkg.substr(1);
+                    }
+
                     if (pkg == packageName) {
+                        if (localSkipBuild) skipBuild = true;
+
                         if (found) {
                             result.push_back(line.substr(delimiterPos + 1, line.size()));
                         } else {
