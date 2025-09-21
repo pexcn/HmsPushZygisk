@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-ndk-build -C module || exit 1
+ndk-build NDK_DEBUG=0 -C module || exit 1
 
 mkdir -p magisk/zygisk
 

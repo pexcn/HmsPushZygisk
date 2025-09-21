@@ -4,6 +4,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := hmspush
 LOCAL_SRC_FILES := main.cpp server.cpp hook.cpp atexit/atexit.cpp
 LOCAL_STATIC_LIBRARIES := libcxx
+LOCAL_CFLAGS += -O2 -DNDEBUG
 LOCAL_LDLIBS := -llog
 include $(BUILD_SHARED_LIBRARY)
 
