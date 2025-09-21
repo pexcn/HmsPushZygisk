@@ -9,30 +9,29 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
       with:
         submodules: 'recursive'
-        
+
     - name: Setup Android NDK
-      uses: nttld/setup-ndk@v1.2.0
+      uses: nttld/setup-ndk@v1.5.0
       with:
-        ndk-version: r25b
+        ndk-version: r27d
         add-to-path: true
         local-cache: true
-        
+
     - name: Build
       run: ./build.sh
-    
+
     - name: Collect artifcat name
       run: |
         echo "release=$(basename -s .zip build/*.zip)" >> $GITHUB_ENV
 
     - name: Upload Release
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ env.release }}
         path: magisk
