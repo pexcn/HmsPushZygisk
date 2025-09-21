@@ -1,3 +1,6 @@
 [submodule "libcxx"]
 	path = module/jni/libcxx
 	url = https://github.com/topjohnwu/libcxx.git
+[submodule "module/jni/atexit"]
+	path = module/jni/atexit
+	url = https://github.com/5ec1cff/local_cxa_atexit_finalize_impl.git
