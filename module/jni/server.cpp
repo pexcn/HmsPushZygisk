@@ -8,7 +8,7 @@
 
 using namespace std;
 
-static constexpr auto CONFIG_PATH = "/data/misc/hmspush/app.conf";
+static constexpr auto CONFIG_PATH = "/data/adb/hmspush/app.conf";
 
 off_t sendFile(int remote_fd, const string &path) {
     auto in_fd = open(path.c_str(), O_RDONLY);
