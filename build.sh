@@ -6,7 +6,7 @@ ndk-build -C module || exit 1
 
 mkdir -p magisk/zygisk
 
-for arch in arm64-v8a armeabi-v7a x86 x86_64
+for arch in arm64-v8a armeabi-v7a
 do
     cp module/libs/$arch/*.so magisk/zygisk/$arch.so
 done
