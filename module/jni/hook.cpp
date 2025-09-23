@@ -13,9 +13,9 @@ jstring my_native_get(JNIEnv *env, jclass clazz, jstring keyJ, jstring defJ) {
     jstring hooked_result = nullptr;
 
     if (strcmp(key, "ro.build.version.emui") == 0) {
-        hooked_result = env->NewStringUTF("EmotionUI_8.0.0");
+        hooked_result = env->NewStringUTF("EmotionUI_15.0.0");
     } else if (strcmp(key, "ro.build.hw_emui_api_level") == 0) {
-        hooked_result = env->NewStringUTF("21");
+        hooked_result = env->NewStringUTF("35");
     }
 
     env->ReleaseStringUTFChars(keyJ, key);
