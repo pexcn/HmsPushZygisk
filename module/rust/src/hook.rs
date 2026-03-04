@@ -1,14 +1,14 @@
 use std::sync::OnceLock;
 
 use jni::{
-    JNIEnv,
     objects::{JClass, JObject, JString, JValue},
     strings::JNIStr,
     sys::JNINativeMethod,
+    JNIEnv,
 };
 use log::debug;
 
-use zygisk_api::api::{V4, ZygiskApi};
+use zygisk_api::api::{ZygiskApi, V4};
 
 // Storage for the original `native_get` function pointer saved by Zygisk.
 type NativeGetFn = unsafe extern "C" fn(
@@ -34,7 +34,10 @@ unsafe extern "C" fn my_native_get(
         String::new()
     } else {
         let js = unsafe { JString::from_raw(key_j) };
-        let s: String = jni_env.get_string(&js).map(|s| s.into()).unwrap_or_default();
+        let s: String = jni_env
+            .get_string(&js)
+            .map(|s| s.into())
+            .unwrap_or_default();
         // Don't let the JString wrapper drop/delete the local ref we don't own.
         let _ = js.into_raw();
         s
@@ -117,13 +120,12 @@ fn hook_system_properties(api: &mut ZygiskApi<'_, V4>, env: JNIEnv<'_>) {
 
     // JNIStr is the type required by hook_jni_native_methods (impl Deref<Target = JNIStr>)
     // SAFETY: literal is valid UTF-8 and contains no interior NUL.
-    let class_name: &JNIStr = unsafe {
-        JNIStr::from_ptr(b"android/os/SystemProperties\0".as_ptr() as *const _)
-    };
+    let class_name: &JNIStr =
+        unsafe { JNIStr::from_ptr(b"android/os/SystemProperties\0".as_ptr() as *const _) };
 
     let method_name = b"native_get\0".as_ptr() as *mut std::os::raw::c_char;
-    let signature = b"(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;\0"
-        .as_ptr() as *mut std::os::raw::c_char;
+    let signature = b"(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;\0".as_ptr()
+        as *mut std::os::raw::c_char;
 
     let mut methods = [JNINativeMethod {
         name: method_name,

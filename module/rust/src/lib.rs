@@ -1,13 +1,12 @@
-use std::os::unix::net::UnixStream;
-use std::io::Read;
-
+use android_logger::Config;
 use jni::JNIEnv;
-use log::{debug, error, info};
+use log::{debug, error, info, LevelFilter};
+use std::io::{Read, Write};
+use std::os::unix::net::UnixStream;
 use zygisk_api::{
-    ZygiskModule,
-    api::{V4, ZygiskApi},
+    api::{ZygiskApi, V4},
     raw::ZygiskRaw,
-    register_module, register_companion,
+    register_companion, register_module, ZygiskModule,
 };
 // ZygiskOption is re-exported by the V4 transparent module via `pub use crate::raw::v4::transparent::*`
 use zygisk_api::api::v4::ZygiskOption;
@@ -27,6 +26,12 @@ impl ZygiskModule for HmsPushModule {
         env: JNIEnv<'a>,
         args: &'a mut <V4 as ZygiskRaw<'_>>::AppSpecializeArgs,
     ) {
+        android_logger::init_once(
+            Config::default()
+                .with_max_level(LevelFilter::Debug)
+                .with_tag("HmsPushZygisk"),
+        );
+
         // args.nice_name and args.app_data_dir are &JString<'a>
         let process_name = jstring_to_string(&env, args.nice_name);
         let app_data_dir = jstring_to_string(&env, args.app_data_dir);
@@ -76,101 +81,56 @@ fn parse_package_name(app_data_dir: &str) -> String {
         .to_string()
 }
 
-fn pre_specialize(
-    mut api: ZygiskApi<'_, V4>,
-    env: JNIEnv<'_>,
-    package_name: &str,
-    process: &str,
-) {
-    let process_list = request_remote_config(&mut api, package_name);
+fn pre_specialize(mut api: ZygiskApi<'_, V4>, env: JNIEnv<'_>, package_name: &str, process: &str) {
+    let should_hook = query_should_hook(&mut api, package_name, process);
 
-    if !process_list.is_empty() {
-        let should_hook = process_list
-            .iter()
-            .any(|item| item.is_empty() || item == process);
-
-        if should_hook {
-            info!("hook package = [{}], process = [{}]", package_name, process);
-            hook::do_hook(&mut api, env);
-            return;
-        }
+    if should_hook {
+        info!("hook package = [{}], process = [{}]", package_name, process);
+        hook::do_hook(&mut api, env);
+    } else {
+        api.set_option(ZygiskOption::DlCloseModuleLibrary);
     }
-
-    api.set_option(ZygiskOption::DlCloseModuleLibrary);
 }
 
-fn request_remote_config(
-    api: &mut ZygiskApi<'_, V4>,
-    package_name: &str,
-) -> Vec<String> {
-    debug!("requestRemoteConfig for {}", package_name);
+/// Ask the companion process whether this (package, process) pair should be hooked.
+fn query_should_hook(api: &mut ZygiskApi<'_, V4>, package_name: &str, process_name: &str) -> bool {
+    debug!(
+        "query_should_hook: package = [{}], process = [{}]",
+        package_name, process_name
+    );
 
-    let result = api.with_companion(|stream| {
-        receive_and_parse_config(stream, package_name)
-    });
+    let pkg = package_name.to_string();
+    let proc = process_name.to_string();
+
+    let result = api.with_companion(|stream| send_query(stream, &pkg, &proc));
 
     match result {
-        Ok(configs) => {
-            debug!("config size: {}", configs.len());
-            configs
-        }
+        Ok(should_hook) => should_hook,
         Err(e) => {
             error!("Failed to connect to companion: {:?}", e);
-            Vec::new()
+            false
         }
     }
 }
 
-fn receive_and_parse_config(stream: &mut UnixStream, package_name: &str) -> Vec<String> {
-    let mut size_buf = [0u8; 8];
-    match stream.read_exact(&mut size_buf) {
-        Ok(_) => {}
-        Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
-            debug!("receive empty config");
-            return Vec::new();
-        }
+/// Write "package_name\nprocess_name\n" to the companion and read back 1 byte.
+fn send_query(stream: &mut UnixStream, package_name: &str, process_name: &str) -> bool {
+    // Send the two fields as newline-terminated strings.
+    let payload = format!("{}\n{}\n", package_name, process_name);
+    if let Err(e) = stream.write_all(payload.as_bytes()) {
+        error!("Failed to send query: {}", e);
+        return false;
+    }
+
+    // Read the single-byte response: 1 = hook, 0 = skip.
+    let mut resp = [0u8; 1];
+    match stream.read_exact(&mut resp) {
+        Ok(_) => resp[0] != 0,
         Err(e) => {
-            error!("Failed to read size: {}", e);
-            return Vec::new();
+            error!("Failed to read companion response: {}", e);
+            false
         }
     }
-
-    let size = i64::from_le_bytes(size_buf);
-    if size <= 0 {
-        return Vec::new();
-    }
-
-    let mut content = vec![0u8; size as usize];
-    if let Err(e) = stream.read_exact(&mut content) {
-        error!("Failed to read config data: {}", e);
-        return Vec::new();
-    }
-
-    parse_config(&content, package_name)
-}
-
-fn parse_config(content: &[u8], package_name: &str) -> Vec<String> {
-    let text = match std::str::from_utf8(content) {
-        Ok(t) => t,
-        Err(_) => return Vec::new(),
-    };
-
-    let mut result = Vec::new();
-    for line in text.lines() {
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        match line.split_once('|') {
-            Some((pkg, proc)) if pkg == package_name => {
-                result.push(proc.to_string());
-            }
-            None if line == package_name => {
-                result.push(String::new());
-            }
-            _ => {}
-        }
-    }
-    result
 }
 
 register_module!(HmsPushModule);
