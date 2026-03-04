@@ -2,11 +2,7 @@ plugins {
     id 'com.android.library'
 }
 
+// Native library is built via Cargo (see build.sh), not ndk-build.
 android {
-    externalNativeBuild {
-        ndkBuild {
-            path("jni/Android.mk")
-        }
-    }
-    ndkVersion '25.2.9519653'
+    namespace 'com.hmspush.zygisk'
 }

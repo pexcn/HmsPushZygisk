@@ -1,11 +1,24 @@
+### Android / Gradle ###
 *.iml
 .gradle
-/local.properties
+local.properties
 /.idea
 .DS_Store
 /build
 /captures
 .externalNativeBuild
 .cxx
-local.properties
+
+### NDK / C++ ###
+# Vendored libcxx submodule build artifacts
+module/jni/libcxx/
+
+### Output .so files staged for packaging ###
 magisk/zygisk/*.so
+
+### Rust / Cargo ###
+target/
+.cargo/
+
+### Module build output ###
+module/build/

@@ -1,0 +1,14 @@
+[package]
+name = "hmspush"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "hmspush"
+crate-type = ["cdylib"]
+
+[dependencies]
+zygisk-api = { git = "https://github.com/rmnscnce/zygisk-api-rs" }
+jni = "0.21"
+log = "0.4"
+android_logger = "0.14"
