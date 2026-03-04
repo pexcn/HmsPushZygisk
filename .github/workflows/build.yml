@@ -3,36 +3,45 @@ name: Build
 on:
   workflow_dispatch:
   push:
-    branches: [ "master" ]
+    branches: ["*"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: 'recursive'
-        
-    - name: Setup Android NDK
-      uses: nttld/setup-ndk@v1.2.0
-      with:
-        ndk-version: r25b
-        add-to-path: true
-        local-cache: true
-        
-    - name: Build
-      run: ./build.sh
-    
-    - name: Collect artifcat name
-      run: |
-        echo "release=$(basename -s .zip build/*.zip)" >> $GITHUB_ENV
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
 
-    - name: Upload Release
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: ${{ env.release }}
-        path: magisk
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+          add-to-path: true
+          local-cache: true
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: module/rust
+
+      - name: Build
+        run: ./build.sh
+
+      - name: Collect artifact name
+        run: |
+          echo "release=$(basename -s .zip build/*.zip)" >> $GITHUB_ENV
+
+      - name: Upload Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.release }}
+          path: build/*.zip
