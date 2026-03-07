@@ -1,0 +1,151 @@
+:root {
+  /* Light mode defaults */
+  --bg-color: #f6f8fa;
+  --panel-bg: rgba(0, 0, 0, 0.02);
+  --panel-border: rgba(0, 0, 0, 0.1);
+  --text-primary: #1f2328;
+  --text-secondary: #656d76;
+  --icon-bg: #e6edf3;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  
+  /* Material 3 custom properties */
+  --md-sys-color-primary: #1a7f37;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-surface: #f6f8fa;
+  --md-sys-color-on-surface: #1f2328;
+  --md-sys-color-surface-container: rgba(0, 0, 0, 0.02);
+  
+  --md-list-container-color: transparent;
+  --md-list-item-container-color: rgba(0, 0, 0, 0.03);
+  --md-list-item-label-text-color: var(--text-primary);
+  --md-list-item-supporting-text-color: var(--text-secondary);
+  --md-list-item-hover-state-layer-color: rgba(0, 0, 0, 0.06);
+  --md-list-item-hover-state-layer-opacity: 1;
+
+  --md-filled-text-field-container-color: var(--panel-bg);
+  --md-filled-text-field-input-text-color: var(--text-primary);
+  --md-filled-text-field-label-text-color: var(--text-secondary);
+  --md-filled-text-field-active-indicator-color: var(--md-sys-color-primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #0d1117;
+    --panel-bg: rgba(255, 255, 255, 0.05);
+    --panel-border: rgba(255, 255, 255, 0.1);
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --icon-bg: #21262d;
+    --scrollbar-thumb: var(--panel-border);
+    
+    /* Material 3 custom properties */
+    --md-sys-color-primary: #2ea043;
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-surface: #0d1117;
+    --md-sys-color-on-surface: #e6edf3;
+    --md-sys-color-surface-container: rgba(255, 255, 255, 0.05);
+    
+    --md-list-container-color: transparent;
+    --md-list-item-container-color: rgba(255, 255, 255, 0.05);
+    --md-list-item-label-text-color: var(--text-primary);
+    --md-list-item-supporting-text-color: var(--text-secondary);
+    --md-list-item-hover-state-layer-color: rgba(255, 255, 255, 0.08);
+    --md-list-item-hover-state-layer-opacity: 1;
+
+    --md-filled-text-field-container-color: var(--panel-bg);
+    --md-filled-text-field-input-text-color: var(--text-primary);
+    --md-filled-text-field-label-text-color: var(--text-secondary);
+    --md-filled-text-field-active-indicator-color: var(--md-sys-color-primary);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body, html {
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+}
+
+#root {
+  max-width: 600px;
+  margin: 0 auto;
+  height: 100vh;
+  padding: calc(16px + env(safe-area-inset-top)) 16px 0 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.search-container {
+  margin-bottom: 20px;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  height: 48px;
+  border-radius: 24px;
+  --md-filled-text-field-container-shape: 24px;
+  --md-filled-text-field-active-indicator-height: 0px;
+  --md-filled-text-field-focus-active-indicator-height: 0px;
+  --md-filled-text-field-hover-active-indicator-height: 0px;
+}
+
+.app-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  border-radius: 12px;
+  min-height: 0;
+}
+
+/* Custom subtle scrollbar */
+.app-list::-webkit-scrollbar {
+  width: 4px;
+}
+.app-list::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.app-item {
+  margin-bottom: 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  overflow: hidden;
+  --md-list-item-container-shape: 12px;
+  flex-shrink: 0;
+}
+
+.app-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  background-color: var(--icon-bg);
+}
+
+.loading, .empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.spinner {
+  margin-bottom: 12px;
+}

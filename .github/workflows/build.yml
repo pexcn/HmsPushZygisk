@@ -33,6 +33,15 @@ jobs:
         with:
           workspaces: module
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Bun dependencies
+        run: bun install
+        working-directory: webui
+
       - name: Build
         run: ./build.sh
 

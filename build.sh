@@ -48,6 +48,19 @@ build_target "x86_64"      "x86_64-linux-android"
 
 popd
 
+pushd webui
+
+echo "==> Building webui..."
+bun install
+bun run clean
+bun run build
+
+rm -rf "$PROJECT_ROOT/magisk/webroot"
+mkdir -p "$PROJECT_ROOT/magisk/webroot"
+cp -r dist/* "$PROJECT_ROOT/magisk/webroot/"
+
+popd
+
 echo "==> Packaging module zip..."
 pushd magisk
 

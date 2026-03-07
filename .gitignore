@@ -15,6 +15,7 @@ module/jni/libcxx/
 
 ### Output .so files staged for packaging ###
 magisk/zygisk/*.so
+magisk/webroot
 
 ### Rust / Cargo ###
 target/
