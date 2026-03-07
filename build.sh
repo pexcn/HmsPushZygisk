@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+# Resolve the absolute path of the directory containing this script
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 NDK_VERSION="25.2.9519653"
 # Allow override via env; default to the standard macOS SDK location
 NDK_HOME="${ANDROID_NDK_HOME:-$HOME/Library/Android/sdk/ndk/$NDK_VERSION}"
@@ -22,10 +25,10 @@ export CARGO_TARGET_I686_LINUX_ANDROID_LINKER="$TOOLCHAIN/i686-linux-android21-c
 export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER="$TOOLCHAIN/x86_64-linux-android21-clang"
 
 # clear old so files
-rm -rf magisk/zygisk/*
+rm -rf "$PROJECT_ROOT/magisk/zygisk"/*
 
 echo "==> Building Rust module..."
-pushd module/rust
+pushd module
 
 build_target() {
     local abi="$1"
@@ -33,8 +36,8 @@ build_target() {
     echo "  -> Building $abi ($target)"
     cargo build --release --target "$target"
 
-    mkdir -p ../../magisk/zygisk
-    cp "target/$target/release/libhmspush.so" "../../magisk/zygisk/$abi.so"
+    mkdir -p "$PROJECT_ROOT/magisk/zygisk"
+    cp "target/$target/release/libhmspush.so" "$PROJECT_ROOT/magisk/zygisk/$abi.so"
     echo "  -> Copied $abi.so"
 }
 
@@ -50,11 +53,11 @@ pushd magisk
 
 version=$(grep '^version=' module.prop | cut -d= -f2)
 
-rm -rf ../build
-mkdir -p ../build
+rm -rf "$PROJECT_ROOT/build"
+mkdir -p "$PROJECT_ROOT/build"
 
-zip -r9 "../build/hmspush-zygisk-$version.zip" .
+zip -r9 "$PROJECT_ROOT/build/hmspush-zygisk-$version.zip" .
 
 popd
 
-echo "==> Done! Output: build/hmspush-zygisk-$version.zip"
+echo "==> Done! Output: $PROJECT_ROOT/build/hmspush-zygisk-$version.zip"

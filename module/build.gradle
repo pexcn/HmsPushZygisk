@@ -1,8 +1,0 @@
-plugins {
-    id 'com.android.library'
-}
-
-// Native library is built via Cargo (see build.sh), not ndk-build.
-android {
-    namespace 'com.hmspush.zygisk'
-}

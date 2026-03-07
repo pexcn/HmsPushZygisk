@@ -31,7 +31,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: module/rust
+          workspaces: module
 
       - name: Build
         run: ./build.sh
