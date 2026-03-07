@@ -23,7 +23,7 @@ impl ZygiskModule for HmsPushModule {
     fn pre_app_specialize<'a>(
         &self,
         mut api: ZygiskApi<'a, V4>,
-        env: JNIEnv<'a>,
+        mut env: JNIEnv<'a>,
         args: &'a mut <V4 as ZygiskRaw<'_>>::AppSpecializeArgs,
     ) {
         android_logger::init_once(
@@ -33,8 +33,8 @@ impl ZygiskModule for HmsPushModule {
         );
 
         // args.nice_name and args.app_data_dir are &JString<'a>
-        let process_name = jstring_to_string(&env, args.nice_name);
-        let app_data_dir = jstring_to_string(&env, args.app_data_dir);
+        let process_name = jstring_to_string(&mut env, args.nice_name);
+        let app_data_dir = jstring_to_string(&mut env, args.app_data_dir);
 
         if process_name.is_empty() || app_data_dir.is_empty() {
             api.set_option(ZygiskOption::DlCloseModuleLibrary);
@@ -47,7 +47,7 @@ impl ZygiskModule for HmsPushModule {
             package_name, process_name
         );
 
-        pre_specialize(api, env, &package_name, &process_name);
+        pre_specialize(api, env, package_name, &process_name);
     }
 
     fn pre_server_specialize<'a>(
@@ -61,10 +61,9 @@ impl ZygiskModule for HmsPushModule {
 }
 
 /// Convert a JString reference to a Rust String.
-fn jstring_to_string(env: &JNIEnv<'_>, jstr: &jni::objects::JString<'_>) -> String {
+fn jstring_to_string(env: &mut JNIEnv<'_>, jstr: &jni::objects::JString<'_>) -> String {
     // SAFETY: env comes from Zygisk's trusted JNI entry which provides a valid env.
-    let mut env_clone = unsafe { env.unsafe_clone() };
-    match env_clone.get_string(jstr) {
+    match env.get_string(jstr) {
         Ok(s) => s.into(),
         Err(_) => String::new(),
     }
@@ -72,13 +71,11 @@ fn jstring_to_string(env: &JNIEnv<'_>, jstr: &jni::objects::JString<'_>) -> Stri
 
 /// Extract the last path component (package name) from an app_data_dir path.
 /// Handles: /data/user/<uid>/<pkg>, /data/data/<pkg>, /mnt/expand/.../<pkg>
-fn parse_package_name(app_data_dir: &str) -> String {
+fn parse_package_name(app_data_dir: &str) -> &str {
     app_data_dir
-        .split('/')
-        .filter(|s| !s.is_empty())
-        .last()
+        .rsplit('/')
+        .find(|s| !s.is_empty())
         .unwrap_or("")
-        .to_string()
 }
 
 fn pre_specialize(mut api: ZygiskApi<'_, V4>, env: JNIEnv<'_>, package_name: &str, process: &str) {
@@ -99,10 +96,7 @@ fn query_should_hook(api: &mut ZygiskApi<'_, V4>, package_name: &str, process_na
         package_name, process_name
     );
 
-    let pkg = package_name.to_string();
-    let proc = process_name.to_string();
-
-    let result = api.with_companion(|stream| send_query(stream, &pkg, &proc));
+    let result = api.with_companion(|stream| send_query(stream, package_name, process_name));
 
     match result {
         Ok(should_hook) => should_hook,

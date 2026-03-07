@@ -36,15 +36,15 @@ pub fn companion_handler(stream: &mut UnixStream) {
 
 fn handle_query(stream: &mut UnixStream) -> io::Result<bool> {
     // Read two newline-terminated strings sent by the zygote side.
-    let mut reader = BufReader::new(&*stream);
+    let mut reader = BufReader::new(&mut *stream);
 
     let mut package_name = String::new();
     reader.read_line(&mut package_name)?;
-    let package_name = package_name.trim_end_matches('\n').trim_end_matches('\r');
+    let package_name = package_name.trim_end();
 
     let mut process_name = String::new();
     reader.read_line(&mut process_name)?;
-    let process_name = process_name.trim_end_matches('\n').trim_end_matches('\r');
+    let process_name = process_name.trim_end();
 
     debug!(
         "companion query: package = [{}], process = [{}]",

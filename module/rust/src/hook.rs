@@ -33,14 +33,11 @@ unsafe extern "C" fn my_native_get(
     let key: String = if key_j.is_null() {
         String::new()
     } else {
-        let js = unsafe { JString::from_raw(key_j) };
-        let s: String = jni_env
+        let js = std::mem::ManuallyDrop::new(unsafe { JString::from_raw(key_j) });
+        jni_env
             .get_string(&js)
-            .map(|s| s.into())
-            .unwrap_or_default();
-        // Don't let the JString wrapper drop/delete the local ref we don't own.
-        let _ = js.into_raw();
-        s
+            .map(Into::into)
+            .unwrap_or_default()
     };
 
     let spoofed: Option<&str> = match key.as_str() {
@@ -63,24 +60,20 @@ unsafe extern "C" fn my_native_get(
 }
 
 /// Public entry: apply all hooks.
-pub fn do_hook(api: &mut ZygiskApi<'_, V4>, env: JNIEnv<'_>) {
-    hook_build(&env);
+pub fn do_hook(api: &mut ZygiskApi<'_, V4>, mut env: JNIEnv<'_>) {
+    hook_build(&mut env);
     hook_system_properties(api, env);
 }
 
 /// Set android.os.Build.BRAND = "Huawei" and MANUFACTURER = "HUAWEI".
-fn hook_build(env: &JNIEnv<'_>) {
+fn hook_build(env: &mut JNIEnv<'_>) {
     debug!("hook Build");
 
-    // JNIEnv methods in jni 0.21 require &mut self, so we clone for each operation.
-    let build_class = {
-        let mut e = unsafe { env.unsafe_clone() };
-        match e.find_class("android/os/Build") {
-            Ok(c) => c,
-            Err(e) => {
-                debug!("find_class android/os/Build failed: {:?}", e);
-                return;
-            }
+    let build_class = match env.find_class("android/os/Build") {
+        Ok(c) => c,
+        Err(e) => {
+            debug!("find_class android/os/Build failed: {:?}", e);
+            return;
         }
     };
 
@@ -90,18 +83,17 @@ fn hook_build(env: &JNIEnv<'_>) {
     debug!("hook Build done");
 }
 
-fn set_static_string_field(env: &JNIEnv<'_>, class: &JClass<'_>, field: &str, value: &str) {
+fn set_static_string_field(env: &mut JNIEnv<'_>, class: &JClass<'_>, field: &str, value: &str) {
     let sig = "Ljava/lang/String;";
-    let mut e = unsafe { env.unsafe_clone() };
 
-    let field_id = match e.get_static_field_id(class, field, sig) {
+    let field_id = match env.get_static_field_id(class, field, sig) {
         Ok(id) => id,
         Err(err) => {
             debug!("get_static_field_id {} failed: {:?}", field, err);
             return;
         }
     };
-    let new_str = match e.new_string(value) {
+    let new_str = match env.new_string(value) {
         Ok(s) => s,
         Err(err) => {
             debug!("new_string {} failed: {:?}", value, err);
@@ -109,7 +101,7 @@ fn set_static_string_field(env: &JNIEnv<'_>, class: &JClass<'_>, field: &str, va
         }
     };
     let obj = JObject::from(new_str);
-    if let Err(err) = e.set_static_field(class, field_id, JValue::Object(&obj)) {
+    if let Err(err) = env.set_static_field(class, field_id, JValue::Object(&obj)) {
         debug!("set_static_field {} failed: {:?}", field, err);
     }
 }
@@ -121,11 +113,11 @@ fn hook_system_properties(api: &mut ZygiskApi<'_, V4>, env: JNIEnv<'_>) {
     // JNIStr is the type required by hook_jni_native_methods (impl Deref<Target = JNIStr>)
     // SAFETY: literal is valid UTF-8 and contains no interior NUL.
     let class_name: &JNIStr =
-        unsafe { JNIStr::from_ptr(b"android/os/SystemProperties\0".as_ptr() as *const _) };
+        unsafe { JNIStr::from_ptr(c"android/os/SystemProperties".as_ptr()) };
 
-    let method_name = b"native_get\0".as_ptr() as *mut std::os::raw::c_char;
-    let signature = b"(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;\0".as_ptr()
-        as *mut std::os::raw::c_char;
+    let method_name = c"native_get".as_ptr().cast_mut();
+    let signature =
+        c"(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;".as_ptr().cast_mut();
 
     let mut methods = [JNINativeMethod {
         name: method_name,
