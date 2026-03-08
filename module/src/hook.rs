@@ -10,6 +10,8 @@ use log::debug;
 
 use zygisk_api::api::{ZygiskApi, V4};
 
+use crate::config::{SPOOF_BUILD_PROPERTIES, SPOOF_SYSTEM_PROPERTIES};
+
 // Storage for the original `native_get` function pointer saved by Zygisk.
 type NativeGetFn = unsafe extern "C" fn(
     *mut jni::sys::JNIEnv,
@@ -40,11 +42,10 @@ unsafe extern "C" fn my_native_get(
             .unwrap_or_default()
     };
 
-    let spoofed: Option<&str> = match key.as_str() {
-        "ro.build.version.emui" => Some("EmotionUI_8.0.0"),
-        "ro.build.hw_emui_api_level" => Some("21"),
-        _ => None,
-    };
+    let spoofed: Option<&str> = SPOOF_SYSTEM_PROPERTIES
+        .iter()
+        .find(|(k, _)| *k == key.as_str())
+        .map(|(_, v)| *v);
 
     if let Some(value) = spoofed {
         let result = jni_env
@@ -65,7 +66,7 @@ pub fn do_hook(api: &mut ZygiskApi<'_, V4>, mut env: JNIEnv<'_>) {
     hook_system_properties(api, env);
 }
 
-/// Set android.os.Build.BRAND = "Huawei" and MANUFACTURER = "HUAWEI".
+/// Set android.os.Build properties from config.
 fn hook_build(env: &mut JNIEnv<'_>) {
     debug!("hook Build");
 
@@ -77,8 +78,9 @@ fn hook_build(env: &mut JNIEnv<'_>) {
         }
     };
 
-    set_static_string_field(env, &build_class, "BRAND", "Huawei");
-    set_static_string_field(env, &build_class, "MANUFACTURER", "HUAWEI");
+    for (prop, value) in SPOOF_BUILD_PROPERTIES {
+        set_static_string_field(env, &build_class, prop, value);
+    }
 
     debug!("hook Build done");
 }

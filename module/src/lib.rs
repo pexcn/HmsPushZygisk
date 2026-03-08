@@ -11,6 +11,7 @@ use zygisk_api::{
 // ZygiskOption is re-exported by the V4 transparent module via `pub use crate::raw::v4::transparent::*`
 use zygisk_api::api::v4::ZygiskOption;
 
+pub mod config;
 mod hook;
 mod server;
 
