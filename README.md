@@ -34,6 +34,10 @@ com.example.app|com.example.app:push
 ./build.sh
 ```
 
+### 致谢
+
+- [zygisk-api-rs](https://github.com/rmnscnce/zygisk-api-rs)
+
 ### License
 
 [GNU General Public License v3 (GPL-3)](http://www.gnu.org/copyleft/gpl.html).
