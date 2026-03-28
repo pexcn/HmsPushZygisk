@@ -8,7 +8,7 @@
 
 ### 配置
 
-手动编辑 `/data/adb/hmspush/app.conf` 文件（文件不存在请手动创建），或者使用 [HMSPush](https://github.com/fei-ke/HmsPushZygisk.git) 应用进行配置
+手动编辑 `/data/adb/hmspush/app.conf` 文件（文件不存在请手动创建），或者使用 [HMSPush](https://github.com/fei-ke/HmsPush) 应用进行配置
 
 配置示例：
 
@@ -20,9 +20,15 @@ com.example.app
 com.example.app|com.example.app:push
 ```
 
-### 构建
+### 开发、构建
 
-配置 ndk 路径后在项目根目录执行，构建产物在 `build` 目录下
+#### Requirement
+
+- [NDK](https://developer.android.com/ndk/downloads) and setup `ANDROID_NDK_HOME` environment variable
+- [Cargo](https://rust-lang.org/)
+- [Bun](https://bun.sh/) for WebUI
+
+在项目根目录执行，构建产物在 `build` 目录下
 
 ```shell
 ./build.sh
