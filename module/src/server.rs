@@ -8,8 +8,6 @@ use std::{
 use android_logger::Config;
 use log::{debug, error, LevelFilter};
 
-const CONFIG_PATH: &str = "/data/misc/hmspush/app.conf";
-
 /// Companion handler: reads package_name and process_name from the zygote side,
 /// checks the config file, and writes back 1 byte: 1 = should hook, 0 = skip.
 pub fn companion_handler(stream: &mut UnixStream) {
@@ -62,7 +60,7 @@ fn handle_query(stream: &mut UnixStream) -> io::Result<bool> {
 
 /// Parse the config file and decide whether the given (package, process) should be hooked.
 fn check_config(package_name: &str, process_name: &str) -> io::Result<bool> {
-    let content = match fs::read_to_string(CONFIG_PATH) {
+    let content = match fs::read_to_string(crate::config::CONFIG_PATH) {
         Ok(c) => c,
         Err(e) if e.kind() == io::ErrorKind::NotFound => {
             debug!("Config file not found, skip hook");

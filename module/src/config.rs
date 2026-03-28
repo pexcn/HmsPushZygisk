@@ -5,3 +5,5 @@ pub const SPOOF_SYSTEM_PROPERTIES: &[(&str, &str)] = &[
 
 pub const SPOOF_BUILD_PROPERTIES: &[(&str, &str)] =
     &[("BRAND", "Huawei"), ("MANUFACTURER", "HUAWEI")];
+
+pub const CONFIG_PATH: &str = "/data/adb/hmspush/app.conf";

@@ -8,7 +8,7 @@ export interface AppInfo {
   processes: string[]; // From config file `pkg|process`
 }
 
-const CONFIG_PATH = "/data/misc/hmspush/app.conf";
+const CONFIG_PATH = "/data/adb/hmspush/app.conf";
 
 export type ConfigMap = Map<string, string[]>;
 
