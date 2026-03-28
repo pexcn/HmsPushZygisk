@@ -50,7 +50,8 @@ jobs:
           echo "release=$(basename -s .zip build/*.zip)" >> $GITHUB_ENV
 
       - name: Upload Release
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.release }}
           path: build/*.zip
+          archive: false
