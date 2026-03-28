@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches: ["*"]
+    tags:
+      - "v*"
   pull_request:
     branches: ["master"]
 
@@ -14,7 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          fetch-depth: 0
           submodules: "recursive"
+
+      - name: Fetch Tags
+        run: |
+          git fetch --tags --force
 
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
@@ -45,9 +52,29 @@ jobs:
         run: |
           echo "release=$(basename -s .zip build/*.zip)" >> $GITHUB_ENV
 
-      - name: Upload Release
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.release }}
           path: build/*.zip
           archive: false
+
+      - name: Get tag annotation
+        id: tag
+        if: github.ref_type == 'tag'
+        run: |
+          {
+            echo 'annotation<<EOF'
+            git for-each-ref "${GITHUB_REF}" --format '%(contents)'
+            echo 'EOF'
+          } >>"${GITHUB_OUTPUT}"
+
+      - name: Create Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.tag.outputs.annotation }}
+          files: build/*.zip
+          prerelease: ${{ contains(github.ref_name, '-') }}
