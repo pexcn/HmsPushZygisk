@@ -35,9 +35,8 @@ unsafe extern "C" fn my_native_get(
     let key: String = if key_j.is_null() {
         String::new()
     } else {
-        let js = std::mem::ManuallyDrop::new(unsafe { JString::from_raw(key_j) });
         jni_env
-            .get_string(&js)
+            .get_string(unsafe { &JString::from_raw(key_j) })
             .map(Into::into)
             .unwrap_or_default()
     };
@@ -114,12 +113,12 @@ fn hook_system_properties(api: &mut ZygiskApi<'_, V4>, env: JNIEnv<'_>) {
 
     // JNIStr is the type required by hook_jni_native_methods (impl Deref<Target = JNIStr>)
     // SAFETY: literal is valid UTF-8 and contains no interior NUL.
-    let class_name: &JNIStr =
-        unsafe { JNIStr::from_ptr(c"android/os/SystemProperties".as_ptr()) };
+    let class_name: &JNIStr = unsafe { JNIStr::from_ptr(c"android/os/SystemProperties".as_ptr()) };
 
     let method_name = c"native_get".as_ptr().cast_mut();
-    let signature =
-        c"(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;".as_ptr().cast_mut();
+    let signature = c"(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+        .as_ptr()
+        .cast_mut();
 
     let mut methods = [JNINativeMethod {
         name: method_name,
