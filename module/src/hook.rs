@@ -10,8 +10,6 @@ use log::debug;
 
 use zygisk_api::api::{ZygiskApi, V4};
 
-use crate::config::{SPOOF_BUILD_PROPERTIES, SPOOF_SYSTEM_PROPERTIES};
-
 // Storage for the original `native_get` function pointer saved by Zygisk.
 type NativeGetFn = unsafe extern "C" fn(
     *mut jni::sys::JNIEnv,
@@ -21,6 +19,7 @@ type NativeGetFn = unsafe extern "C" fn(
 ) -> jni::sys::jstring;
 
 static ORIG_NATIVE_GET: OnceLock<NativeGetFn> = OnceLock::new();
+static SPOOFED_SYS_PROPS: OnceLock<&'static [(&'static str, &'static str)]> = OnceLock::new();
 
 /// Hook replacement for `SystemProperties.native_get`.
 unsafe extern "C" fn my_native_get(
@@ -41,7 +40,8 @@ unsafe extern "C" fn my_native_get(
             .unwrap_or_default()
     };
 
-    let spoofed: Option<&str> = SPOOF_SYSTEM_PROPERTIES
+    let sys_props = SPOOFED_SYS_PROPS.get().cloned().unwrap_or(&[]);
+    let spoofed: Option<&str> = sys_props
         .iter()
         .find(|(k, _)| *k == key.as_str())
         .map(|(_, v)| *v);
@@ -59,14 +59,8 @@ unsafe extern "C" fn my_native_get(
     }
 }
 
-/// Public entry: apply all hooks.
-pub fn do_hook(api: &mut ZygiskApi<'_, V4>, mut env: JNIEnv<'_>) {
-    hook_build(&mut env);
-    hook_system_properties(api, env);
-}
-
 /// Set android.os.Build properties from config.
-fn hook_build(env: &mut JNIEnv<'_>) {
+pub fn hook_build(env: &mut JNIEnv<'_>, props: &[(&str, &str)]) {
     debug!("hook Build");
 
     let build_class = match env.find_class("android/os/Build") {
@@ -77,7 +71,7 @@ fn hook_build(env: &mut JNIEnv<'_>) {
         }
     };
 
-    for (prop, value) in SPOOF_BUILD_PROPERTIES {
+    for (prop, value) in props {
         set_static_string_field(env, &build_class, prop, value);
     }
 
@@ -108,8 +102,14 @@ fn set_static_string_field(env: &mut JNIEnv<'_>, class: &JClass<'_>, field: &str
 }
 
 /// Replace `SystemProperties.native_get` via Zygisk's `hookJniNativeMethods`.
-fn hook_system_properties(api: &mut ZygiskApi<'_, V4>, env: JNIEnv<'_>) {
+pub fn hook_system_properties(
+    api: &mut ZygiskApi<'_, V4>,
+    env: JNIEnv<'_>,
+    sys_props: &'static [(&'static str, &'static str)],
+) {
     debug!("hook SystemProperties");
+
+    let _ = SPOOFED_SYS_PROPS.set(sys_props);
 
     // JNIStr is the type required by hook_jni_native_methods (impl Deref<Target = JNIStr>)
     // SAFETY: literal is valid UTF-8 and contains no interior NUL.

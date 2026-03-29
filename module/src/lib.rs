@@ -12,6 +12,9 @@ use zygisk_api::{
 use zygisk_api::api::v4::ZygiskOption;
 
 pub mod config;
+use config::{
+    HMSPUSH_PACKAGE_NAME, SPOOF_BUILD_PROPERTIES, SPOOF_HMSPUSH_PROPERTIES, SPOOF_SYSTEM_PROPERTIES,
+};
 mod hook;
 mod server;
 
@@ -79,12 +82,27 @@ fn parse_package_name(app_data_dir: &str) -> &str {
         .unwrap_or("")
 }
 
-fn pre_specialize(mut api: ZygiskApi<'_, V4>, env: JNIEnv<'_>, package_name: &str, process: &str) {
+fn pre_specialize(
+    mut api: ZygiskApi<'_, V4>,
+    mut env: JNIEnv<'_>,
+    package_name: &str,
+    process: &str,
+) {
+    if package_name == HMSPUSH_PACKAGE_NAME {
+        info!(
+            "hmspush package detected [{}]: inject spoofed properties",
+            package_name
+        );
+        hook::hook_system_properties(&mut api, env, SPOOF_HMSPUSH_PROPERTIES);
+        return;
+    }
+
     let should_hook = query_should_hook(&mut api, package_name, process);
 
     if should_hook {
         info!("hook package = [{}], process = [{}]", package_name, process);
-        hook::do_hook(&mut api, env);
+        hook::hook_build(&mut env, SPOOF_BUILD_PROPERTIES);
+        hook::hook_system_properties(&mut api, env, SPOOF_SYSTEM_PROPERTIES);
     } else {
         api.set_option(ZygiskOption::DlCloseModuleLibrary);
     }

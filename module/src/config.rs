@@ -7,3 +7,7 @@ pub const SPOOF_BUILD_PROPERTIES: &[(&str, &str)] =
     &[("BRAND", "Huawei"), ("MANUFACTURER", "HUAWEI")];
 
 pub const CONFIG_PATH: &str = "/data/adb/hmspush/app.conf";
+
+pub const HMSPUSH_PACKAGE_NAME: &str = "one.yufz.hmspush";
+
+pub const SPOOF_HMSPUSH_PROPERTIES: &[(&str, &str)] = &[("hmspush.zygisk.enabled", "true")];
