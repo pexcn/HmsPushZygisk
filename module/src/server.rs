@@ -70,18 +70,18 @@ fn check_config(package_name: &str, process_name: &str) -> io::Result<bool> {
     };
 
     for line in content.lines() {
-        if line.is_empty() || line.starts_with('#') {
+        if line.trim().is_empty() || line.trim().starts_with('#') {
             continue;
         }
         match line.split_once('|') {
-            Some((pkg, proc)) if pkg == package_name => {
+            Some((pkg, proc)) if pkg.trim() == package_name => {
                 // A process-specific entry: match only when proc is empty (meaning all
                 // processes of this package) or equals the actual process name.
-                if proc.is_empty() || proc == process_name {
+                if proc.trim().is_empty() || proc.trim() == process_name {
                     return Ok(true);
                 }
             }
-            None if line == package_name => {
+            None if line.trim() == package_name => {
                 // A package-only entry means all processes of this package should be hooked.
                 return Ok(true);
             }
