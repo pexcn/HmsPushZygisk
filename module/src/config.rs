@@ -12,8 +12,8 @@ pub struct PackageProps<'a> {
 pub const DEFAULT_PACKAGE_PROPS: PackageProps<'static> = PackageProps {
     package_name: "",
     system_properties: &[
-        ("ro.build.version.emui", "EmotionUI_8.0.0"),
-        ("ro.build.hw_emui_api_level", "21"),
+        ("ro.build.version.emui", "EmotionUI_15.0.0"),
+        ("ro.build.hw_emui_api_level", "35"),
     ],
     build_properties: &[("BRAND", "Huawei"), ("MANUFACTURER", "HUAWEI")],
 };
@@ -26,17 +26,17 @@ pub const PACKAGE_PROPS: &[PackageProps] = &[
     },
     PackageProps {
         package_name: "com.sankuai.meituan",
-        system_properties: &[("ro.build.version.emui", "EmotionUI_8.0.0")],
+        system_properties: &[("ro.build.version.emui", "EmotionUI_15.0.0")],
         build_properties: &[],
     },
     PackageProps {
         package_name: "com.sankuai.meituan.takeoutnew",
-        system_properties: &[("ro.build.version.emui", "EmotionUI_8.0.0")],
+        system_properties: &[("ro.build.version.emui", "EmotionUI_15.0.0")],
         build_properties: &[],
     },
     PackageProps {
         package_name: "com.dianping.v1",
-        system_properties: &[("ro.build.version.emui", "EmotionUI_8.0.0")],
+        system_properties: &[("ro.build.version.emui", "EmotionUI_15.0.0")],
         build_properties: &[],
     },
     PackageProps {
