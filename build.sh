@@ -51,7 +51,7 @@ popd
 pushd webui
 
 echo "==> Building webui..."
-bun install
+bun install --frozen-lockfile --production
 bun run clean
 bun run build
 
