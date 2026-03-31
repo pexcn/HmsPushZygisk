@@ -43,8 +43,6 @@ build_target() {
 
 build_target "arm64-v8a"   "aarch64-linux-android"
 build_target "armeabi-v7a" "armv7-linux-androideabi"
-build_target "x86"         "i686-linux-android"
-build_target "x86_64"      "x86_64-linux-android"
 
 popd
 
