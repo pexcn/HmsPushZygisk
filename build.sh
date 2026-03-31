@@ -64,13 +64,25 @@ popd
 echo "==> Packaging module zip..."
 pushd magisk
 
-version=$(grep '^version=' module.prop | cut -d= -f2)
+echo "==> Generating version info..."
+TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.1")
+VERSION_CODE=$(git rev-list --count HEAD 2>/dev/null || echo "1")
+if [[ -n $(git status --porcelain) ]]; then
+    VERSION_CODE=$((VERSION_CODE + 1))
+fi
+
+VERSION="$TAG($VERSION_CODE)"
+
+sed -e "s/^version=.*/version=$VERSION/" \
+    -e "s/^versionCode=.*/versionCode=$VERSION_CODE/" \
+    "$PROJECT_ROOT/magisk/module.prop" > "$PROJECT_ROOT/magisk/module.prop.tmp" && \
+    mv "$PROJECT_ROOT/magisk/module.prop.tmp" "$PROJECT_ROOT/magisk/module.prop"
 
 rm -rf "$PROJECT_ROOT/build"
 mkdir -p "$PROJECT_ROOT/build"
 
-zip -r9 "$PROJECT_ROOT/build/hmspush-zygisk-$version.zip" .
+zip -r9 "$PROJECT_ROOT/build/hmspush-zygisk-${VERSION}.zip" .
 
 popd
 
-echo "==> Done! Output: $PROJECT_ROOT/build/hmspush-zygisk-$version.zip"
+echo "==> Done! Output: $PROJECT_ROOT/build/hmspush-zygisk-${VERSION}.zip"
