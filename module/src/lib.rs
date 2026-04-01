@@ -86,8 +86,9 @@ fn pre_specialize(
     package_name: &str,
     process: &str,
 ) {
+    let mut skip_build = false;
     let should_hook = package_name == HMSPUSH_PACKAGE_NAME
-        || query_should_hook(&mut api, package_name, process);
+        || query_should_hook(&mut api, package_name, process, &mut skip_build);
 
     if should_hook {
         info!("hook package = [{}], process = [{}]", package_name, process);
@@ -95,7 +96,7 @@ fn pre_specialize(
         let pkg_props = config::get_properties_for_package(package_name);
 
         if !pkg_props.build_properties.is_empty() {
-            hook::hook_build(&mut env, pkg_props.build_properties);
+            hook::hook_build(&mut env, pkg_props.build_properties, skip_build);
         }
         
         if !pkg_props.system_properties.is_empty() {
@@ -107,13 +108,13 @@ fn pre_specialize(
 }
 
 /// Ask the companion process whether this (package, process) pair should be hooked.
-fn query_should_hook(api: &mut ZygiskApi<'_, V4>, package_name: &str, process_name: &str) -> bool {
+fn query_should_hook(api: &mut ZygiskApi<'_, V4>, package_name: &str, process_name: &str, skip_build: &mut bool) -> bool {
     debug!(
         "query_should_hook: package = [{}], process = [{}]",
         package_name, process_name
     );
 
-    let result = api.with_companion(|stream| send_query(stream, package_name, process_name));
+    let result = api.with_companion(|stream| send_query(stream, package_name, process_name, skip_build));
 
     match result {
         Ok(should_hook) => should_hook,
@@ -125,7 +126,7 @@ fn query_should_hook(api: &mut ZygiskApi<'_, V4>, package_name: &str, process_na
 }
 
 /// Write "package_name\nprocess_name\n" to the companion and read back 1 byte.
-fn send_query(stream: &mut UnixStream, package_name: &str, process_name: &str) -> bool {
+fn send_query(stream: &mut UnixStream, package_name: &str, process_name: &str, skip_build: &mut bool) -> bool {
     // Send the two fields as newline-terminated strings.
     let payload = format!("{}\n{}\n", package_name, process_name);
     if let Err(e) = stream.write_all(payload.as_bytes()) {
@@ -133,10 +134,13 @@ fn send_query(stream: &mut UnixStream, package_name: &str, process_name: &str) -
         return false;
     }
 
-    // Read the single-byte response: 1 = hook, 0 = skip.
+    // Read the single-byte response: bit0 = hook, bit1 = skip_build.
     let mut resp = [0u8; 1];
     match stream.read_exact(&mut resp) {
-        Ok(_) => resp[0] != 0,
+        Ok(_) => {
+            *skip_build = (resp[0] & 0x2) != 0;
+            (resp[0] & 0x1) != 0
+        }
         Err(e) => {
             error!("Failed to read companion response: {}", e);
             false
