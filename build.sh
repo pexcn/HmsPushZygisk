@@ -67,7 +67,7 @@ pushd magisk
 echo "==> Generating version info..."
 TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.1")
 VERSION_CODE=$(git rev-list --count HEAD 2>/dev/null || echo "1")
-if [[ -n $(git status --porcelain) ]]; then
+if [[ -n $(git status --porcelain -- . ':!magisk') ]]; then
     VERSION_CODE=$((VERSION_CODE + 1))
 fi
 
